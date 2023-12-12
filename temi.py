@@ -4,6 +4,8 @@ from transformers import BertTokenizer, BertForSequenceClassification
 import torch
 import pyttsx3
 from langdetect import detect
+import pyaudio
+import numpy as np
 
 # Load the BERT models and tokenizers for English and Chinese
 @st.cache(allow_output_mutation=True)
@@ -21,22 +23,20 @@ def convert_audio_to_text(device_index=0):
     recognizer = sr.Recognizer()
 
     try:
-        with sr.Microphone(device_index=device_index) as source:
-            st.write("Say something...")
-            recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source)
+        # Use PyAudio to get audio input
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=device_index)
+        audio_data = np.frombuffer(stream.read(44100), dtype=np.int16)
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+        # Recognize audio using speech_recognition
+        with sr.AudioData(audio_data.tobytes(), sample_rate=44100, sample_width=2) as audio:
+            text = recognizer.recognize_google(audio, language='zh-TW')  # For Chinese
+            return text, 'zh'
     except sr.UnknownValueError:
         return "Speech recognition could not understand audio", ''
-
-    try:
-        text = recognizer.recognize_google(audio, language='zh-TW')  # For Chinese
-        return text, 'zh'
-    except sr.UnknownValueError:
-        try:
-            text = recognizer.recognize_google(audio)  # For English or other languages
-            return text, 'en'
-        except sr.UnknownValueError:
-            return "Speech recognition could not understand audio", ''
 
 # Preprocess text for sentiment analysis based on language
 def preprocess_text(text, tokenizer, language):
