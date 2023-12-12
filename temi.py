@@ -17,13 +17,11 @@ def load_bert_models():
     return tokenizer_en, model_en, tokenizer_cn, model_cn
 
 # Convert audio to text using speech recognition
-def convert_audio_to_text():
+def convert_audio_to_text(device_index=0):
     recognizer = sr.Recognizer()
 
     try:
-        # Use a placeholder text for testing without an actual microphone
-        # Remove or modify this line in a production environment
-        with sr.Microphone() as source:
+        with sr.Microphone(device_index=device_index) as source:
             st.write("Say something...")
             recognizer.adjust_for_ambient_noise(source)
             audio = recognizer.listen(source)
@@ -79,7 +77,8 @@ def main():
 
     if st.button("Start Recording"):
         # Convert audio to text
-        audio_text, detected_lang = convert_audio_to_text()
+        # Modify the device_index parameter based on the index of your desired microphone
+        audio_text, detected_lang = convert_audio_to_text(device_index=0)
 
         if audio_text:
             st.write(f"Recognized text: {audio_text}")
